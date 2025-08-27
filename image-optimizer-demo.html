@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Optimization Analyzer - WordPress Admin</title>
+    <style>
+        /* WordPress Admin Base Styles */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+            background: #f1f1f1;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .wrap {
+            margin: 10px 0 0 20px;
+            max-width: 1400px;
+        }
+        
+        .wrap h1 {
+            font-size: 23px;
+            font-weight: 400;
+            margin: 0 0 20px 0;
+            padding: 9px 0 4px 0;
+            color: #23282d;
+        }
+        
+        /* WordPress Table Styles */
+        .widefat {
+            border-collapse: collapse;
+            width: 100%;
+            clear: both;
+            margin: 0;
+            background: white;
+            border: 1px solid #ccd0d4;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .widefat thead th {
+            background: #f9f9f9;
+            border-bottom: 1px solid #ccd0d4;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #23282d;
+        }
+        
+        .widefat tbody td {
+            padding: 12px;
+            border-bottom: 1px solid #f1f1f1;
+            vertical-align: middle;
+        }
+        
+        .widefat tbody tr:hover {
+            background: #f9f9f9;
+        }
+        
+        .widefat tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        /* Image thumbnail styles */
+        .image-thumbnail {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+        }
+        
+        /* Status indicators */
+        .status-ok {
+            color: #00a32a;
+            font-weight: bold;
+        }
+        
+        .status-recommended {
+            color: #ff9500;
+            font-weight: bold;
+        }
+        
+        .status-warning {
+            color: #d63638;
+            font-weight: bold;
+        }
+        
+        /* WordPress Button Styles */
+        .button {
+            display: inline-block;
+            text-decoration: none;
+            font-size: 13px;
+            line-height: 2.15384615;
+            min-height: 30px;
+            margin: 0;
+            padding: 0 10px;
+            cursor: pointer;
+            border-width: 1px;
+            border-style: solid;
+            -webkit-appearance: none;
+            border-radius: 3px;
+            white-space: nowrap;
+            box-sizing: border-box;
+            background: #f6f7f7;
+            border-color: #ddd;
+            color: #2271b1;
+        }
+        
+        .button:hover {
+            background: #f0f0f1;
+            border-color: #0a4b78;
+            color: #0a4b78;
+        }
+        
+        .button-primary {
+            background: #2271b1;
+            border-color: #2271b1;
+            color: #fff;
+        }
+        
+        .button-primary:hover {
+            background: #135e96;
+            border-color: #135e96;
+        }
+        
+        /* Summary Stats */
+        .optimizer-stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-card {
+            background: white;
+            border: 1px solid #ccd0d4;
+            border-radius: 3px;
+            padding: 15px;
+            flex: 1;
+            min-width: 200px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2271b1;
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        /* Bulk Actions */
+        .bulk-actions {
+            background: white;
+            border: 1px solid #ccd0d4;
+            border-radius: 3px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .bulk-actions select {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .wrap {
+                margin: 10px;
+            }
+            
+            .widefat {
+                font-size: 14px;
+            }
+            
+            .widefat thead th,
+            .widefat tbody td {
+                padding: 8px;
+            }
+            
+            .optimizer-stats {
+                flex-direction: column;
+            }
+            
+            .bulk-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+        
+        /* Loading state */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        /* Progress bar */
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f1f1f1;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #2271b1;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <h1>Image Optimization Analyzer</h1>
+        
+        <!-- Summary Statistics -->
+        <div class="optimizer-stats">
+            <div class="stat-card">
+                <span class="stat-number">24</span>
+                <div class="stat-label">Total Images</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">12</span>
+                <div class="stat-label">Need WebP Conversion</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">3.2 MB</span>
+                <div class="stat-label">Potential Savings</div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">156 KB</span>
+                <div class="stat-label">Average File Size</div>
+            </div>
+        </div>
+        
+        <!-- Bulk Actions -->
+        <div class="bulk-actions">
+            <label for="bulk-action">Bulk Actions:</label>
+            <select id="bulk-action">
+                <option value="">Select Action</option>
+                <option value="convert-webp">Convert to WebP</option>
+                <option value="compress">Compress Images</option>
+                <option value="generate-thumbnails">Regenerate Thumbnails</option>
+            </select>
+            <button class="button button-primary" onclick="runBulkAction()">Apply</button>
+            <div class="progress-bar" id="progress-bar" style="display: none;">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+        </div>
+        
+        <!-- Images Table -->
+        <table class="widefat">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="select-all"></th>
+                    <th>Image</th>
+                    <th>Size (KB)</th>
+                    <th>Format</th>
+                    <th>WebP</th>
+                    <th>Lazy Load</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="checkbox" class="image-checkbox"></td>
+                    <td><img src="https://picsum.photos/60/60?random=1" class="image-thumbnail" alt="Sample Image 1"></td>
+                    <td>245.8</td>
+                    <td>JPEG</td>
+                    <td><span class="status-recommended">Recommended</span></td>
+                    <td><span class="status-ok">Enabled by default (HTML attribute)</span></td>
+                    <td><button class="button" onclick="optimizeImage(this)">Optimize</button></td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="image-checkbox"></td>
+                    <td><img src="https://picsum.photos/60/60?random=2" class="image-thumbnail" alt="Sample Image 2"></td>
+                    <td>89.2</td>
+                    <td>WebP</td>
+                    <td><span class="status-ok">OK</span></td>
+                    <td><span class="status-ok">Enabled by default (HTML attribute)</span></td>
+                    <td><button class="button" onclick="optimizeImage(this)">Optimize</button></td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="image-checkbox"></td>
+                    <td><img src="https://picsum.photos/60/60?random=3" class="image-thumbnail" alt="Sample Image 3"></td>
+                    <td>512.1</td>
+                    <td>PNG</td>
+                    <td><span class="status-recommended">Recommended</span></td>
+                    <td><span class="status-ok">Enabled by default (HTML attribute)</span></td>
+                    <td><button class="button" onclick="optimizeImage(this)">Optimize</button></td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="image-checkbox"></td>
+                    <td><img src="https://picsum.photos/60/60?random=4" class="image-thumbnail" alt="Sample Image 4"></td>
+                    <td>67.5</td>
+                    <td>JPEG</td>
+                    <td><span class="status-recommended">Recommended</span></td>
+                    <td><span class="status-ok">Enabled by default (HTML attribute)</span></td>
+                    <td><button class="button" onclick="optimizeImage(this)">Optimize</button></td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="image-checkbox"></td>
+                    <td><img src="https://picsum.photos/60/60?random=5" class="image-thumbnail" alt="Sample Image 5"></td>
+                    <td>198.3</td>
+                    <td>WebP</td>
+                    <td><span class="status-ok">OK</span></td>
+                    <td><span class="status-ok">Enabled by default (HTML attribute)</span></td>
+                    <td><button class="button" onclick="optimizeImage(this)">Optimize</button></td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" class="image-checkbox"></td>
+                    <td><img src="https://picsum.photos/60/60?random=6" class="image-thumbnail" alt="Sample Image 6"></td>
+                    <td>423.7</td>
+                    <td>PNG</td>
+                    <td><span class="status-recommended">Recommended</span></td>
+                    <td><span class="status-ok">Enabled by default (HTML attribute)</span></td>
+                    <td><button class="button" onclick="optimizeImage(this)">Optimize</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Select all functionality
+        document.getElementById('select-all').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.image-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+        
+        // Individual image optimization
+        function optimizeImage(button) {
+            const originalText = button.textContent;
+            button.textContent = 'Optimizing...';
+            button.disabled = true;
+            button.classList.add('loading');
+            
+            // Simulate optimization process
+            setTimeout(() => {
+                button.textContent = 'Optimized ✓';
+                button.style.background = '#00a32a';
+                button.style.borderColor = '#00a32a';
+                button.style.color = 'white';
+                button.disabled = true;
+                
+                // Update the row to show optimization results
+                const row = button.closest('tr');
+                const sizeCell = row.cells[2];
+                const webpCell = row.cells[4];
+                
+                // Simulate size reduction
+                const currentSize = parseFloat(sizeCell.textContent);
+                const newSize = Math.round(currentSize * 0.7 * 10) / 10; // 30% reduction
+                sizeCell.textContent = newSize;
+                sizeCell.style.color = '#00a32a';
+                sizeCell.style.fontWeight = 'bold';
+                
+                // Update WebP status
+                if (webpCell.textContent.includes('Recommended')) {
+                    webpCell.innerHTML = '<span class="status-ok">Converted ✓</span>';
+                }
+            }, 2000);
+        }
+        
+        // Bulk action functionality
+        function runBulkAction() {
+            const action = document.getElementById('bulk-action').value;
+            const selectedImages = document.querySelectorAll('.image-checkbox:checked');
+            
+            if (!action) {
+                alert('Please select a bulk action');
+                return;
+            }
+            
+            if (selectedImages.length === 0) {
+                alert('Please select at least one image');
+                return;
+            }
+            
+            const progressBar = document.getElementById('progress-bar');
+            const progressFill = document.getElementById('progress-fill');
+            
+            progressBar.style.display = 'block';
+            progressFill.style.width = '0%';
+            
+            let processed = 0;
+            const total = selectedImages.length;
+            
+            // Simulate processing each image
+            selectedImages.forEach((checkbox, index) => {
+                setTimeout(() => {
+                    processed++;
+                    const progress = (processed / total) * 100;
+                    progressFill.style.width = progress + '%';
+                    
+                    // Update the row
+                    const row = checkbox.closest('tr');
+                    const button = row.querySelector('.button');
+                    optimizeImage(button);
+                    
+                    if (processed === total) {
+                        setTimeout(() => {
+                            progressBar.style.display = 'none';
+                            alert(`Bulk ${action} completed for ${total} images!`);
+                        }, 1000);
+                    }
+                }, index * 500);
+            });
+        }
+        
+        // Update stats dynamically
+        function updateStats() {
+            // This would normally fetch real data from WordPress
+            // For demo purposes, we're using static values
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStats();
+        });
+    </script>
+</body>
+</html>
